@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"time"
 
-	dnsv1 "github.com/miekg/dns"
+	dnsv2 "codeberg.org/miekg/dns"
 )
 
 // printHeader prints a formatted section header.
@@ -41,21 +41,29 @@ func printError(err error) {
 }
 
 // printResponse prints DNS response details including answers and round-trip time.
-func printResponse(r *dnsv1.Msg, rtt time.Duration) {
+func printResponse(r *dnsv2.Msg, rtt time.Duration) {
 	truncated := ""
 	if r.Truncated {
 		truncated = " ⚠️  TRUNCATED"
 	}
 	fmt.Printf("📥 Response: ✅ SUCCESS (RTT: %v)%s\n", rtt, truncated)
-	fmt.Printf("   Response Code: %s\n", dnsv1.RcodeToString[r.Rcode])
+	fmt.Printf("   Response Code: %s\n", dnsv2.RcodeToString[r.Rcode])
 	fmt.Printf("   Message Size: %d bytes\n", r.Len())
-	fmt.Printf("   Answers: %d, Authority: %d, Additional: %d\n", len(r.Answer), len(r.Ns), len(r.Extra))
-	
-	// Check for EDNS0 in response
-	if opt := r.IsEdns0(); opt != nil {
-		fmt.Printf("   Server EDNS0 UDP Size: %d bytes\n", opt.UDPSize())
+	// ARCOUNT is the DNS header field counting records in the Additional
+	// section. When EDNS0 is used the server returns an OPT record there, so
+	// ARCOUNT includes it. dnsv2 folds that OPT into r.UDPSize instead of
+	// keeping it in r.Extra, so add it back to match ARCOUNT (what dig shows).
+	additional := len(r.Extra)
+	if r.UDPSize > 0 {
+		additional++
 	}
-	
+	fmt.Printf("   Answers: %d, Authority: %d, Additional: %d\n", len(r.Answer), len(r.Ns), additional)
+
+	// Check for EDNS0 in response
+	if r.UDPSize > 0 {
+		fmt.Printf("   Server EDNS0 UDP Size: %d bytes\n", r.UDPSize)
+	}
+
 	if len(r.Answer) > 0 {
 		fmt.Println("   Answer Records:")
 		for _, ans := range r.Answer {

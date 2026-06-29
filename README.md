@@ -47,7 +47,7 @@ DNS responses that exceed the UDP buffer size get truncated — the server sets 
 
 ## Dependencies
 
-- [miekg/dns](https://github.com/miekg/dns) — DNS library for Go
+- [miekg/dns](https://codeberg.org/miekg/dns) — DNS library for Go
 
 ## License
 
