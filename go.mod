@@ -2,7 +2,7 @@ module github.com/guessi/dns-inspector
 
 go 1.26
 
-toolchain go1.26.4
+toolchain go1.26.5
 
 require codeberg.org/miekg/dns v0.6.83
 
